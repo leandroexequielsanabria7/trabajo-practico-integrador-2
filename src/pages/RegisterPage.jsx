@@ -1,5 +1,8 @@
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { useForm } from "../hooks/useForm";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const fields = [
   { name: "username", label: "Usuario", type: "text" },
@@ -12,7 +15,9 @@ const fields = [
 ];
 
 export const RegisterPage = () => {
-  const { formState, handleInputChange } = useForm({
+  const navigate = useNavigate();
+
+  const { formState, handleInputChange, handleReset } = useForm({
     username: "",
     email: "",
     password: "",
@@ -23,9 +28,49 @@ export const RegisterPage = () => {
     birth_date: "",
   });
 
-  const handleSubmit = (event) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [validationErrors, setValidationErrors] = useState([]);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    
+    setIsLoading(true);
+    setError(null);
+    setValidationErrors([]);
+
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formState),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        handleReset();
+        navigate("/login", {
+          state: { message: "Registro exitoso. Ya podés iniciar sesión." },
+        });
+        return;
+      }
+
+      if (response.status === 400) {
+        // express-validator con errors.mapped() → { campo: { msg, path, ... } }
+        setValidationErrors(Object.values(data.errors ?? {}));
+      } else if (response.status === 403) {
+        setError("No tenés permisos para realizar esta acción.");
+      } else if (response.status >= 500) {
+        setError("Ocurrió un error en el servidor. Intentá más tarde.");
+      } else {
+        setError(data.message ?? "No se pudo completar el registro.");
+      }
+    } catch {
+      setError("No se pudo conectar con el servidor.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -66,11 +111,22 @@ export const RegisterPage = () => {
           className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:border-emerald-400"
         />
 
+        {error && <p className="mt-4 text-sm font-medium text-red-400">{error}</p>}
+
+        {validationErrors.length > 0 && (
+          <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-red-400">
+            {validationErrors.map((err) => (
+              <li key={err.path}>{err.msg}</li>
+            ))}
+          </ul>
+        )}
+
         <button
           type="submit"
+          disabled={isLoading}
           className="mt-6 w-full rounded-lg bg-emerald-500 py-2 font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
         >
-          Registrarme
+          {isLoading ? "Registrando..." : "Registrarme"}
         </button>
 
         <p className="mt-4 text-center text-sm text-slate-400">
