@@ -2,7 +2,7 @@ import { Link } from "react-router";
 
 export const Navbar = () => {
   return (
-    <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
+    <header className="bordgit add .er-b border-slate-800 bg-slate-900/80 backdrop-blur">
       <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <Link to="/home" className="text-lg font-bold text-sky-400 hover:text-sky-300">
           Blog Personal
